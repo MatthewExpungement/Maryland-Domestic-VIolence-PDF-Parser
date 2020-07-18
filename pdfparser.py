@@ -8,6 +8,7 @@ from os import listdir
 from os.path import isfile, join
 import sys
 import csv
+import os
 
 def extractFirstPageContent(extractedText):
     po_start = keys_start = False
@@ -82,13 +83,25 @@ def appendToCSV(dvdata,county,year,month):
     # TODO: Right now you need to have the csvs already made. It'd be nice if it checked and created csvs if they don't exist.
     # This is built so there are three seperate csvs that are filled one at a time
     dvtypes = ('DV PROTECTIVE','JUVENILE PEACE','PEACE')
-    path = ''
+    path = 'Results\\'
+
     for dvtype in dvtypes:
+        if(os.path.exists(path + dvtype + ".csv")== False):
+            with open(path +dvtype + '.csv','a',newline='\n') as fd:
+                csvwriter = csv.writer(fd, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                writeinfo = ['Year','County','Month','Male','Female','Unknown','Total']
+                csvwriter.writerow(writeinfo)
         if(dvtype in dvdata.keys()):
             with open(path +dvtype + '.csv','a',newline='\n') as fd:
                 csvwriter = csv.writer(fd, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 total = int(dvdata[dvtype].setdefault('MALE',0)) + int(dvdata[dvtype].setdefault('FEMALE',0)) + int(dvdata[dvtype].setdefault('UNKNOWN',0))
                 writeinfo = [year,county,month,dvdata[dvtype].setdefault('MALE',0),dvdata[dvtype].setdefault('FEMALE',0),dvdata[dvtype].setdefault('UNKNOWN',0),total]
+                csvwriter.writerow(writeinfo)
+        else:
+            # This way we add 0's for months where there are no results
+             with open(path +dvtype + '.csv','a',newline='\n') as fd:
+                csvwriter = csv.writer(fd, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                writeinfo = [year,county,month,0,0,0,0]
                 csvwriter.writerow(writeinfo)
 
 
@@ -121,7 +134,7 @@ if __name__ == '__main__':
     )
     x = 0
     for county in counties:
-        path = '' + county #If files not stored in same directory of python file
+        path = 'DVCases\\' + county + "\\"
         onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
         for filename in onlyfiles:
             print(filename)
@@ -129,7 +142,7 @@ if __name__ == '__main__':
             year = filename.split('_')[-2]
             # The format changed starting in 2017 and my parser only works for 2018 and above.
             if(int(year) >= 2018):
-                text = getTextFromFirstPage(path + "\\" + filename)
+                text = getTextFromFirstPage(path + filename)
                 po=extractFirstPageContent(text)
                 appendToCSV(po,county,year,month)
 
